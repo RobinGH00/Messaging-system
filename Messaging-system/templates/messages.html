@@ -1,0 +1,144 @@
+{% block content %}
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.3.1/dist/jquery.min.js"></script>
+<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.7/dist/semantic.min.css">
+<script src="https://cdn.jsdelivr.net/npm/fomantic-ui@2.8.7/dist/semantic.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.js" integrity="sha512-aMGMvNYu8Ue4G+fHa359jcPb1u+ytAF+P2SCb+PxrjCdO3n3ZTxJ30zuH39rimUggmTwmh2u7wvQsDTHESnmfQ==" crossorigin="anonymous"></script>
+
+
+{% block scripts %}
+{{ moment.include_moment() }}
+{% endblock %}
+
+    <div class="ui four column grid">
+
+<div class="two wide computer only column"></div>
+
+      <div class="two wide computer only column">
+      </div>
+
+        <div class="nine wide computer sixteen wide mobile column">
+          <div class="text" style="margin-top:50px">
+            <h2>Messaging System - INF226</h2>
+          </div>
+					<div style="margin-top:20px; margin-bottom:50px;" class="ui container">
+
+	          <a href= {{ url_for('.sendmessage') }}>
+	            <button class="ui button">
+	              Send New Message
+	            </button>
+	          </a>
+            <a href= {{ url_for('.logout') }}>
+	            <button class="ui button">
+	              Log out
+	            </button>
+	          </a>
+	        </div>
+          <div class="ui secondary container" id="threads">
+
+                            {% for message in messages %}
+                              {% if message.thread_id in unread_threads_list %}
+                              {% set unread_thread_class = "ui segment" %}
+															{% set unread_thread_cir_class = "circle icon" %}
+                              {% else %}
+                              {% set unread_thread_class = "ui secondary segment" %}
+															{% set unread_thread_cir_class = "secondary circle outline icon" %}
+                              {% endif %}
+                            <div id="{{ message.thread_id }}">
+                            <a href='{{ url_for('.messages', thread_id=message.thread_id) }}'>
+                            <div id="{{ message.thread_id+'_thread_notify' }}" class="{{ unread_thread_class }}" style="white-space:nowrap; overflow: hidden; text-overflow: ellipsis;">
+
+																								<i id="{{ message.thread_id+'_thread_notify_cir' }}" class="{{ unread_thread_cir_class }}"></i>
+
+																								<div style="margin-left:25px;">
+																												<div style="margin-top:5px; margin-bottom:5px;" class=" top aligned content"> From:
+                                                        {{ message.sender_id }}
+																												</div>
+																												<div style="margin-top:5px; margin-bottom:5px;" class=" middle aligned content">Subject:
+                                                    		{{ message.subject }}
+																												</div>
+																												<div style="margin-top:5px; margin-bottom:5px;" class="bottom aligned content">
+                                                    		{{ moment(message.timestamp).calendar() }}
+																												</div>
+																								</div>
+                            </div>
+                            </a>
+                            <br>
+                            </div>
+                            {% endfor %}
+
+                    {% if not messages %}
+                    <br>
+                   <center><div id="no_messages_notify">Inbox is empty</div></center>
+									 {% else %}
+									 <center><div id="no_messages_notify" style="display:none;">Inbox is empty</div></center>
+                   {% endif %}
+        </div>
+    </div>
+
+<script>
+
+var socket = io.connect('/messages', {rememberTransport: false})
+
+  socket.on("{{ current_user.websocket_id+'_newmsg' }}", function(data){
+  			socket_fetch = $.ajax({
+  									method: 'GET',
+  									url: "{{ url_for('.message_socket')}}"+'?url='+data.message_url
+  								});
+
+  	socket_fetch.done(function(responseObject){
+      $('#'+responseObject.thread_id).remove();
+      $('#threads').prepend(responseObject.thread);
+      $('.mail').addClass("orange")
+			$('#no_messages_notify').hide()
+			flask_moment_render_all()
+  })
+  });
+
+  socket.on("{{ current_user.websocket_id+'_notify_deletion' }}", function(data){
+		if(data.type == 'thread'){
+		$('#'+data.thread_id).remove();
+
+        if(data.total_threads < 5){
+            $('#fetch_button').remove();
+        }
+				if(data.total_threads == 0){
+					$('#no_messages_notify').show()
+				}
+		}
+	})
+
+  socket.on("{{ current_user.websocket_id+'_notify' }}", function(data){
+  		if(data.type == 'mailbox' && data.notify == 'false'){
+  			$('.mail').removeClass("orange")
+  		}
+			if(data.type == 'thread' && data.notify == 'false'){
+				$('#'+data.thread_id+'_thread_notify').attr('class', 'ui segment')
+				$('#'+data.thread_id+'_thread_notify_cir').attr('class', 'circle outline icon')
+			}
+
+  })
+
+window['page'] = 2
+
+function fetch_threads(){
+  fetch_threads_ajax = $.ajax({
+    method: "GET",
+    url: "{{ url_for('.messages')+'?page=' }}"+page
+  })
+  fetch_threads_ajax.done(
+    function(responseObject){
+      if(responseObject.status == 200){
+        $(responseObject.threads).appendTo("#threads")
+        window['page'] = window['page']+1
+
+        if(responseObject.fetch_button == 'false'){
+          $('#fetch_button').remove();
+        }
+
+      }
+  })
+}
+</script>
+{% endblock %}

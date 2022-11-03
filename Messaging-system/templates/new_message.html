@@ -1,0 +1,22 @@
+
+						{% for message in message_thread %}
+                    <div id="{{ message.url }}" class="ui items">
+                       <div class="ui segment" style="margin-right:50px;">
+                        <div class="item">
+                        <div class="content">
+                               <div class="ui label"><i class="address card outline icon"></i>
+			                    {% if current_user.username == message.sender_id %}
+			                    <a class="header">You</a> sent
+			                    {% else %}
+			                    <a class="header">{{ message.sender_id }}</a> sent
+			                    {% endif %}
+                                </div>
+														<div class="ui label"><i class="clock icon"></i>{{ moment(message.timestamp).calendar() }}</div>
+                           </div>
+                           <br>
+ 
+                        </div>
+                      </div>
+                    </div>
+                   </div>
+            {% endfor %}
