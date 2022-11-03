@@ -8,7 +8,7 @@
 
 # Features
 * Instant messages between user accounts.
-* A sender and one recepint
+* A sender and one recepient
 * Sends a message with some content, can reply to the same message
 * A read /unread inbox with timestamp using MomentJS and Flask-moment. 
 * Delete messages / all messages in that conversation
